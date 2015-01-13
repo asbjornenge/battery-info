@@ -3,9 +3,10 @@ var batteryInfo = require('../index')
 
 describe('battery-info', function() {
 
-    it('can read battery info', function() {
+    it('can read battery info', function(done) {
         batteryInfo('BAT0', function(err, info) {
-            console.log(info)
+            assert(typeof info == 'object')
+            done()
         })
     })
 

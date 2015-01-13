@@ -6,6 +6,27 @@ var batteryPath = require('battery-path')
 function batteryInfo(battery, callback) {
     if (typeof battery == 'function') { callback = battery; battery = 'BAT0'; }
 
+    var _path  = path.resolve(batteryPath(battery))
+    var _info  = {}
+    var _done  = false
+    var _files = []
+    var _errors = null 
+    var _files_read = []
+
+    var check_complete = function() {
+        if (!done) return
+        if (_files.length == _files_read.length) callback(_errors, _info)
+    }
+
+    var emitter = walkdir(_path+'/', function(path, stat) {})
+    emitter.on('file', function(file) {
+        console.log('file')
+    })
+    emitter.on('end', function() {
+        console.log('im done')
+        check_complete()
+    })
+
     function buildJSON(keys, obj) {
         obj = obj || {}
         var parent = keys.shift()
@@ -31,7 +52,6 @@ function batteryInfo(battery, callback) {
         })
     }
 
-    var _path = path.resolve(batteryPath(battery))
     var paths = walkdir.sync(_path+'/').map(function(fullpath) {
         return fullpath.split(_path)[1].split('/').slice(1)
     }).reduce(function(coll, curr, index, arr) {
