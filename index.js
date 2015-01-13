@@ -14,7 +14,7 @@ function batteryInfo(battery, callback) {
     var _files_read = []
 
     var check_complete = function() {
-        if (!done) return
+        if (!_done) return
         if (_files.length == _files_read.length) callback(_errors, _info)
     }
 
