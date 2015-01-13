@@ -1,47 +1,46 @@
 var fs   = require('fs')
 var path = require('path')
+var walkdir = require('walkdir')
 var batteryPath = require('battery-path')
 
-function batteryRemainingPercent(battery, callback) {
-  if (typeof battery == 'function') { callback = battery; battery = 'BAT0'; }
+function batteryInfo(battery, callback) {
+    if (typeof battery == 'function') { callback = battery; battery = 'BAT0'; }
 
-    function readBatteryInfo(battery, property) {
-        return fs.readFileSync(path.resolve(batteryPath(battery), property))
+    function buildJSON(keys, obj) {
+        obj = obj || {}
+        var parent = keys.shift()
+        if (keys.length > 0) { 
+            if (typeof obj[parent] != 'object') obj[parent] = {}; 
+            return buildJSON(keys, obj[parent]) 
+        }
+        else obj[parent] = parent
+        return obj
     }
 
-    console.log(readBatteryInfo(battery,'energy_now'))
-    console.log(readBatteryInfo(battery,'energy_full'))
-
-/*
-  function getRemaining(location, callback) {
-    firstLine(location, function(error, remaining) {
-      if (error) {
-        callback(error);
-        return;
-      }
-
-      remaining = parseFloat(remaining.toString());
-
-      // convert muWatts to Watts
-      remaining *= Math.pow(10, -6);
-
-      callback(null, remaining);
-    });
-  }
-
-  var bstr = path.resolve(batteryPath(battery), 'energy_now');
-  getRemaining(bstr, function(error, remaining) {
-    if (error) {
-
-      // try alternate location
-      bstr = path.resolve(batteryPath(battery), 'charge_now');
-      getRemaining(bstr, callback);
-      return;
+    function readFiles(obj, parent_path) {
+        Object.keys(obj).forEach(function(key) {
+            if (typeof obj[key] == 'object') return readFiles(obj[key], parent_path+'/'+key)
+            var fullpath = parent_path+'/'+key
+            if (!fs.lstatSync(fullpath).isFile()) return obj[key] = null
+            try { obj[key] = fs.readFileSync(fullpath, 'utf-8') }
+            catch(e) { obj[key] = null }
+            if (typeof obj[key] == 'string') {
+                var newlines = obj[key].split('\n')
+                if (newlines.length == 2) obj[key] = newlines[0]
+            }
+        })
     }
 
-    callback(null, remaining);
-*/
-  });
+    var _path = path.resolve(batteryPath(battery))
+    var paths = walkdir.sync(_path+'/').map(function(fullpath) {
+        return fullpath.split(_path)[1].split('/').slice(1)
+    }).reduce(function(coll, curr, index, arr) {
+        buildJSON(curr, coll)
+        return coll
+    }, {})
+
+    readFiles(paths, _path)
+    return paths 
 }
 
-module.exports = batteryRemaining;
+module.exports = batteryInfo;
