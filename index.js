@@ -10,18 +10,21 @@ function batteryInfo(battery, callback) {
     var _info  = {}
     var _done  = false
     var _files = []
-    var _errors = null 
+    var _errors = []
     var _files_read = []
 
     var check_complete = function() {
         if (!_done) return
-        if (_files.length == _files_read.length) callback(_errors, _info)
+        if (_files.length == _files_read.length) callback(_errors.length > 0 ? _errors : null, _info)
     }
 
     var emitter = walkdir(_path+'/', function(path, stat) {})
     emitter.on('file', function(file) {
         _files.push(file)
         readAndPopulate(file, _path, _info)
+    })
+    emitter.on('error', function(path, e) {
+        _errors.push(e)
     })
     emitter.on('end', function() {
         _done = true
