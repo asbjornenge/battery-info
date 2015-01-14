@@ -30,6 +30,18 @@ function batteryInfo(battery, callback) {
         check_complete()
     })
 
+    function readFileMaybe(fullpath) {
+        if (!fs.lstatSync(fullpath).isFile()) return null
+        var data;
+        try { data = fs.readFileSync(fullpath, 'utf-8') }
+        catch(e) { data = null }
+        if (typeof data == 'string') {
+            var newlines = data.split('\n')
+            if (newlines.length == 2) data = newlines[0]
+        }
+        return data
+    }
+
     function readAndPopulate(file, parent_path, root) {
         var objPath = file.split(parent_path)[1].slice(1)
         var firstObjPath = objPath.split('/')[0]
@@ -38,9 +50,7 @@ function batteryInfo(battery, callback) {
             if (typeof root[firstObjPath] == 'undefined') root[firstObjPath] = {}
             return readAndPopulate(file, parent_path+'/'+firstObjPath, root[firstObjPath])
         }
-        if (objPath.indexOf('/') < 0) {
-            root[firstObjPath] = firstObjPath
-        }
+        root[firstObjPath] = readFileMaybe(file) 
         _files_read.push(objPath)
         check_complete()
     }
