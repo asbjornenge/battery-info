@@ -20,7 +20,7 @@ function batteryInfo(battery, callback) {
 
     var emitter = walkdir(_path+'/', function(path, stat) {})
     emitter.on('file', function(file) {
-        console.log('file', file)
+        //console.log('file', file)
         _files.push(file)
         readAndPopulate(file, _path, _info)
     })
@@ -32,9 +32,14 @@ function batteryInfo(battery, callback) {
 
     function readAndPopulate(file, parent_path, root) {
         var objPath = file.split(parent_path)[1].slice(1)
-        //if (objPath.indexOf('/') > 0) return readAndPopulate()
+        var firstObjPath = objPath.split('/')[0]
+        console.log('first', firstObjPath)
+        if (objPath.indexOf('/') > 0) {
+            if (typeof root[firstObjPath] == 'undefined') root[firstObjPath] = {}
+            return readAndPopulate(file, parent_path+'/'+firstObjPath, root[firstObjPath])
+        }
         if (objPath.indexOf('/') < 0) {
-            root[objPath] = objPath
+            root[firstObjPath] = firstObjPath
         }
         _files_read.push(objPath)
         check_complete()
